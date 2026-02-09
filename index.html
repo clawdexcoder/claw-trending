@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DexScreener for Agents</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .pulse-dot {
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    .code-container {
+      background: #0d0d14;
+    }
+    pre::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    pre::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    pre::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 3px;
+    }
+    pre::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+    details summary::-webkit-details-marker {
+      display: none;
+    }
+    details summary::marker {
+      content: '';
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-[#08080d] flex flex-col items-center px-4 py-16 font-sans antialiased">
+
+  <!-- Header -->
+  <header class="mb-12 text-center max-w-lg mx-auto">
+    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.06] mb-8">
+      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 pulse-dot"></span>
+      <span class="text-[11px] font-mono font-medium tracking-wider uppercase text-white/40">Live data feed</span>
+    </div>
+    <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">
+      DexScreener for Agents</h1>
+    <p class="text-[15px] text-white/35 leading-relaxed">
+      Refreshed pair data feed designed for autonomous trading agents.
+      Structured, predictable, machine-readable.
+    </p>
+  </header>
+
+  <!-- Code Editor -->
+  <div class="w-full max-w-3xl">
+    <div class="code-container rounded-xl border border-white/[0.08] overflow-hidden shadow-2xl shadow-black/50">
+
+      <!-- Title bar -->
+      <div class="flex items-center justify-between px-4 py-3 bg-white/[0.03] border-b border-white/[0.06]">
+        <div class="flex items-center gap-1.5">
+          <span class="w-3 h-3 rounded-full bg-white/[0.06]"></span>
+          <span class="w-3 h-3 rounded-full bg-white/[0.06]"></span>
+          <span class="w-3 h-3 rounded-full bg-white/[0.06]"></span>
+        </div>
+        <span class="text-[11px] font-mono text-white/20" id="filename">trending.json</span>
+        <div class="w-[52px]"></div>
+      </div>
+
+      <!-- Tabs & copy -->
+      <div class="flex items-center justify-between border-b border-white/[0.06] px-4 py-0 bg-white/[0.02]">
+        <div class="flex">
+          <button onclick="switchTab('json')" id="tab-json"
+            class="tab-button relative px-4 py-2.5 text-xs font-mono font-medium transition-colors text-white/70 border-b-2 border-white/50">
+            JSON
+          </button>
+<button onclick="switchTab('prompt')" id="tab-prompt"
+            class="tab-button relative px-4 py-2.5 text-xs font-mono font-medium transition-colors text-white/30 hover:text-white/50 border-b-2 border-transparent">
+            Prompt
+          </button>
+        </div>
+        <button onclick="copyToClipboard()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[11px] font-mono text-white/30 hover:text-white/60 hover:bg-white/[0.04] transition-all">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+          </svg>
+          <span id="copy-text">Copy</span>
+        </button>
+      </div>
+
+      <!-- Content area -->
+      <div class="relative min-h-[200px]">
+        <div id="loading" class="absolute inset-0 flex items-center justify-center">
+          <div class="text-white/20 font-mono text-xs tracking-wide">Loading...</div>
+        </div>
+        <pre id="content" class="p-5 text-[13px] leading-relaxed font-mono text-white/70 overflow-x-auto max-h-[520px] overflow-y-auto" style="display: none;"></pre>
+      </div>
+    </div>
+
+    <!-- Endpoint hint -->
+    <div class="mt-3 px-1 flex items-center justify-between">
+      <p class="text-[11px] font-mono text-white/15">
+        GET /data/trending.json
+      </p>
+      <p class="text-[11px] font-mono text-white/15">
+        Updated every 5 min
+      </p>
+    </div>
+  </div>
+
+  <!-- FAQ Section -->
+  <section class="mt-24 w-full max-w-3xl">
+    <h2 class="text-lg font-semibold text-white/80 mb-6">
+      FAQ
+    </h2>
+
+    <div class="space-y-2">
+      <details class="group rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+        <summary class="cursor-pointer flex items-center justify-between px-5 py-3.5 text-sm text-white/60 hover:text-white/80 transition-colors">
+          What is this data feed?
+          <svg class="w-4 h-4 text-white/20 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-white/35 leading-relaxed">
+          A real-time dex feed optimised for AI agents and autonomous trading systems. It provides structured, machine-readable data for the top trending tokens.</div>
+      </details>
+
+      <details class="group rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+        <summary class="cursor-pointer flex items-center justify-between px-5 py-3.5 text-sm text-white/60 hover:text-white/80 transition-colors">
+          How often is the data updated?
+          <svg class="w-4 h-4 text-white/20 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-white/35 leading-relaxed">
+          Every 5 minutes.
+        </div>
+      </details>
+
+      <details class="group rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+        <summary class="cursor-pointer flex items-center justify-between px-5 py-3.5 text-sm text-white/60 hover:text-white/80 transition-colors">
+          What formats are available?
+          <svg class="w-4 h-4 text-white/20 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-white/35 leading-relaxed">
+          JSON (structured data),and soon Markdown (human-readable table). Prompt (optimised for AI agent consumption).
+        </div>
+      </details>
+
+      <details class="group rounded-lg border border-white/[0.06] bg-white/[0.02] overflow-hidden">
+        <summary class="cursor-pointer flex items-center justify-between px-5 py-3.5 text-sm text-white/60 hover:text-white/80 transition-colors">
+          Can I use this in my trading bot?
+          <svg class="w-4 h-4 text-white/20 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 9l-7 7-7-7"></path>
+          </svg>
+        </summary>
+        <div class="px-5 pb-4 text-sm text-white/35 leading-relaxed">
+          Yes. Fetch the data in your preferred format and integrate it directly into your agent or bot. The JSON endpoint is ideal for programmatic access.
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="mt-16 mb-4 text-center">
+    <p class="text-[11px] text-white/15 tracking-wide">
+      Updated every 5 minutes
+    </p>
+  </footer>
+
+  <script>
+    let currentTab = 'json';
+    let contentCache = {};
+
+    const FILE_MAP = {
+      json: { path: './data/trending.json', filename: 'trending.json' },
+      prompt: { path: './data/prompt.md', filename: 'prompt.md' }
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadContent('json');
+    });
+
+    async function loadContent(format) {
+      const loading = document.getElementById('loading');
+      const content = document.getElementById('content');
+      const filename = document.getElementById('filename');
+
+      loading.style.display = 'flex';
+      content.style.display = 'none';
+      filename.textContent = FILE_MAP[format].filename;
+
+      if (contentCache[format]) {
+        displayContent(contentCache[format]);
+        return;
+      }
+
+      try {
+        const response = await fetch(FILE_MAP[format].path);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        let data = await response.text();
+
+        if (format === 'json') {
+          data = JSON.stringify(JSON.parse(data), null, 2);
+        }
+
+        contentCache[format] = data;
+        displayContent(data);
+      } catch (error) {
+        console.error('Error loading content:', error);
+        content.textContent = `Failed to load ${FILE_MAP[format].filename}\nMake sure the file exists in the /data folder.`;
+        loading.style.display = 'none';
+        content.style.display = 'block';
+      }
+    }
+
+    function displayContent(data) {
+      const loading = document.getElementById('loading');
+      const content = document.getElementById('content');
+      content.textContent = data;
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    }
+
+    function switchTab(format) {
+      currentTab = format;
+
+      document.querySelectorAll('.tab-button').forEach(btn => {
+        btn.classList.remove('text-white/70', 'border-white/50');
+        btn.classList.add('text-white/30', 'border-transparent');
+      });
+
+      const activeTab = document.getElementById(`tab-${format}`);
+      activeTab.classList.remove('text-white/30', 'border-transparent');
+      activeTab.classList.add('text-white/70', 'border-white/50');
+
+      loadContent(format);
+    }
+
+    async function copyToClipboard() {
+      const content = document.getElementById('content');
+      const copyText = document.getElementById('copy-text');
+
+      try {
+        await navigator.clipboard.writeText(content.textContent);
+        copyText.textContent = 'Copied!';
+        setTimeout(() => { copyText.textContent = 'Copy'; }, 2000);
+      } catch {
+        copyText.textContent = 'Failed';
+        setTimeout(() => { copyText.textContent = 'Copy'; }, 2000);
+      }
+    }
+  </script>
+</body>
+</html>
